@@ -31,18 +31,24 @@ flutter run -d chrome --web-port=7357
 
 Enter a user ID from `1` to `10` to log in. The profile screen displays the
 user's name, username, email, phone, website, and company from the API. Use the
-logout button in the app bar to clear the saved session.
+logout action in the shared authenticated app bar to confirm and clear the
+saved session.
 
-Open category management from the profile screen using the category-tree
-button. Expand a category to see its descendants, use the row actions to add a
-subcategory, edit, or delete, and use the search box to filter the hierarchy.
+Use the bottom navigation to switch between Profile and Categories. The
+Profile tab is selected after login or session restoration. Expand a category
+to see its descendants, use the row actions to add a subcategory, edit, or
+delete, and use the search box to find categories and their hierarchy paths.
 
 To verify web persistence, create categories, stop the app, and run it again
-with the same web port. The browser origin (including port) must be unchanged
-because IndexedDB storage is scoped to the origin. On native mobile/macOS, the
-database is stored in the platform's application database directory. Linux and
-Windows use the FFI SQLite factory with the database path provided by
-sqflite_common_ffi.
+with the same web port. The saved user ID is stored by SharedPreferences in
+browser local storage and is used to fetch the current profile on startup.
+The browser origin (including port) must be unchanged because local storage
+and IndexedDB are scoped to the origin. Clearing browser site data removes
+the local session and database. On Android/iOS, the saved session and database
+remain in application storage across normal app restarts; uninstalling the app
+removes that storage. macOS stores the database in the platform's application
+database directory. Linux and Windows use the FFI SQLite factory with the
+database path provided by sqflite_common_ffi.
 
 If the WebAssembly or worker assets need to be regenerated after upgrading
 `sqflite_common_ffi_web`, run:

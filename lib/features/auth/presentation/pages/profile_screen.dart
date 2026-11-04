@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../domain/entities/user.dart';
 import '../bloc/auth_bloc.dart';
-import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -21,8 +19,11 @@ class ProfileScreen extends StatelessWidget {
         }
         if (state is AuthFailure) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Profile')),
-            body: Center(child: Text(state.message)),
+            body: SafeArea(
+              child: Center(
+                child: _FadeSlideIn(child: Text(state.message)),
+              ),
+            ),
           );
         }
         if (state is! AuthAuthenticated) {
@@ -42,86 +43,87 @@ class _ProfileContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final details = [
+      (Icons.person_outline, 'Name', user.name),
+      (Icons.alternate_email, 'Username', user.username),
+      (Icons.email_outlined, 'Email', user.email),
+      (Icons.phone_outlined, 'Phone', user.phone),
+      (Icons.language, 'Website', user.website),
+      (Icons.business_outlined, 'Company', user.company),
+    ];
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        actions: [
-          IconButton(
-            tooltip: 'Manage categories',
-            onPressed: () => context.go('/categories'),
-            icon: const Icon(Icons.account_tree_outlined),
-          ),
-          IconButton(
-            tooltip: 'Log out',
-            onPressed: () {
-              context.read<AuthBloc>().add(const LogoutRequested());
-            },
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Column(
-                        children: [
-                          CircleAvatar(
-                            radius: 36,
-                            child: Text(
-                              user.name.isEmpty
-                                  ? '?'
-                                  : user.name.characters.first.toUpperCase(),
-                              style: Theme.of(context).textTheme.headlineMedium,
+            child: _FadeSlideIn(
+              offset: 28,
+              duration: 500,
+              child: Card(
+                elevation: 0,
+                color: colors.surfaceContainerLow,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  side: BorderSide(color: colors.outlineVariant),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Column(
+                          children: [
+                            TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 0.4, end: 1),
+                              duration: const Duration(milliseconds: 750),
+                              curve: Curves.elasticOut,
+                              builder: (context, scale, child) =>
+                                  Transform.scale(scale: scale, child: child),
+                              child: CircleAvatar(
+                                radius: 40,
+                                child: Text(
+                                  user.name.isEmpty
+                                      ? '?'
+                                      : user.name.characters.first
+                                          .toUpperCase(),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineMedium,
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            user.name,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            _FadeSlideIn(
+                              index: 1,
+                              child: Text(
+                                user.name,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    _ProfileDetail(
-                      icon: Icons.alternate_email,
-                      label: 'Username',
-                      value: user.username,
-                    ),
-                    _ProfileDetail(
-                      icon: Icons.email_outlined,
-                      label: 'Email',
-                      value: user.email,
-                    ),
-                    _ProfileDetail(
-                      icon: Icons.phone_outlined,
-                      label: 'Phone',
-                      value: user.phone,
-                    ),
-                    _ProfileDetail(
-                      icon: Icons.language,
-                      label: 'Website',
-                      value: user.website,
-                    ),
-                    _ProfileDetail(
-                      icon: Icons.business_outlined,
-                      label: 'Company',
-                      value: user.company,
-                    ),
-                  ],
+                      const SizedBox(height: 24),
+                      for (var i = 0; i < details.length; i++)
+                        _FadeSlideIn(
+                          index: i + 2,
+                          offset: 12,
+                          child: _ProfileDetail(
+                            icon: details[i].$1,
+                            label: details[i].$2,
+                            value: details[i].$3,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -145,11 +147,56 @@ class _ProfileDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(icon),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: colors.primaryContainer,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, size: 20, color: colors.onPrimaryContainer),
+      ),
       title: Text(label),
-      subtitle: Text(value),
+      subtitle: Text(
+        value,
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
+/// Fade + slide-up entrance. Plays once when first mounted.
+class _FadeSlideIn extends StatelessWidget {
+  const _FadeSlideIn({
+    required this.child,
+    this.index = 0,
+    this.offset = 16,
+    this.duration = 350,
+  });
+
+  final Widget child;
+  final int index;
+  final double offset;
+  final int duration;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: duration + index * 80),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) => Opacity(
+        opacity: value,
+        child: Transform.translate(
+          offset: Offset(0, (1 - value) * offset),
+          child: child,
+        ),
+      ),
+      child: child,
     );
   }
 }

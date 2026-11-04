@@ -138,9 +138,113 @@ void main() {
     await tester.enterText(find.byType(TextField), 'reading');
     await pumpUntilIdle(tester);
 
+    expect(FocusManager.instance.primaryFocus?.hasFocus, isTrue);
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Reading'), findsOneWidget);
     expect(find.text('Office'), findsNothing);
+  });
+
+  testWidgets('multiple search results use unique hierarchy keys',
+      (tester) async {
+    late int firstMatchId;
+    late int secondMatchId;
+    await tester.runAsync(() async {
+      final firstRoot = await getIt<add_use_case.AddCategory>()('Group A');
+      final secondRoot = await getIt<add_use_case.AddCategory>()('Group B');
+      firstMatchId = (await getIt<add_use_case.AddCategory>()(
+        'Common',
+        parentId: firstRoot.id,
+      ))
+          .id!;
+      secondMatchId = (await getIt<add_use_case.AddCategory>()(
+        'Common',
+        parentId: secondRoot.id,
+      ))
+          .id!;
+    });
+
+    await pumpCategoryScreen(tester);
+    await tester.enterText(
+        find.byKey(const ValueKey('category-search-field')), 'common');
+    await pumpUntilIdle(tester);
+
+    expect(find.text('Matched: Common'), findsNWidgets(2));
+    expect(find.text('Group A'), findsOneWidget);
+    expect(find.text('Group B'), findsOneWidget);
+    expect(
+      find.byKey(ValueKey('search-result-$firstMatchId')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(ValueKey('search-result-$secondMatchId')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+      'renders and expands a deep category tree at mobile, tablet, '
+      'and desktop sizes', (tester) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 480);
+
+    await tester.runAsync(() async {
+      final root = await getIt<add_use_case.AddCategory>()('Electronics');
+      final mobile = await getIt<add_use_case.AddCategory>()(
+        'Mobile',
+        parentId: root.id,
+      );
+      final android = await getIt<add_use_case.AddCategory>()(
+        'Android',
+        parentId: mobile.id,
+      );
+      await getIt<add_use_case.AddCategory>()(
+        'Samsung',
+        parentId: android.id,
+      );
+    });
+
+    await pumpCategoryScreen(tester);
+    await tester.ensureVisible(find.text('Mobile'));
+    await tester.tap(find.text('Mobile'));
+    await tester.pump();
+    await tester.ensureVisible(find.text('Android'));
+    await tester.tap(find.text('Android'));
+    await tester.pump();
+
+    expect(find.text('Electronics'), findsOneWidget);
+    expect(find.text('Mobile'), findsOneWidget);
+    expect(find.text('Android'), findsOneWidget);
+    expect(find.text('Samsung'), findsOneWidget);
+
+    for (final size in [
+      const Size(768, 1024),
+      const Size(1440, 900),
+    ]) {
+      tester.view.physicalSize = size;
+      await tester.pump();
+      expect(find.text('Electronics'), findsOneWidget);
+      expect(find.text('Samsung'), findsOneWidget);
+    }
+  });
+
+  testWidgets('empty state remains scrollable on a short mobile viewport',
+      (tester) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 360);
+
+    await pumpCategoryScreen(tester);
+
+    expect(find.text('No categories yet'), findsOneWidget);
+    await tester.ensureVisible(find.text('Create first category'));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('edits a category and confirms deleting its subtree',

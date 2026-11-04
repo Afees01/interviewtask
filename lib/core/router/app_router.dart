@@ -8,13 +8,14 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/login_screen.dart';
 import '../../features/auth/presentation/pages/profile_screen.dart';
+import 'main_screen.dart';
 
 class AppRouter {
   AppRouter(AuthBloc authBloc)
       : _authBloc = authBloc,
         _refreshListenable = _AuthRouterRefresh(authBloc) {
     router = GoRouter(
-      initialLocation: '/login',
+      initialLocation: '/profile',
       refreshListenable: _refreshListenable,
       redirect: (context, state) {
         final authState = _authBloc.state;
@@ -27,7 +28,7 @@ class AppRouter {
         if (!isAuthenticated && !isLoginRoute) {
           return '/login';
         }
-        if (isAuthenticated && isLoginRoute) {
+        if (isAuthenticated && (isLoginRoute || state.matchedLocation == '/')) {
           return '/profile';
         }
         return null;
@@ -37,13 +38,28 @@ class AppRouter {
           path: '/login',
           builder: (context, state) => const LoginScreen(),
         ),
-        GoRoute(
-          path: '/profile',
-          builder: (context, state) => const ProfileScreen(),
-        ),
-        GoRoute(
-          path: '/categories',
-          builder: (context, state) => const CategoryManagementScreen(),
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) => MainScreen(
+            navigationShell: navigationShell,
+          ),
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/profile',
+                  builder: (context, state) => const ProfileScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/categories',
+                  builder: (context, state) => const CategoryManagementScreen(),
+                ),
+              ],
+            ),
+          ],
         ),
       ],
     );

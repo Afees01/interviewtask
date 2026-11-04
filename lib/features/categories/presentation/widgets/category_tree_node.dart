@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/category.dart';
@@ -32,9 +34,11 @@ class CategoryTreeNode extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final isRoot = depth == 0;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final indentation = math.min(12.0 + depth * 16.0, screenWidth * 0.22);
 
     return Padding(
-      padding: EdgeInsetsDirectional.fromSTEB(12 + depth * 24, 3, 12, 3),
+      padding: EdgeInsetsDirectional.fromSTEB(indentation, 3, 12, 3),
       child: Material(
         color: colors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
@@ -93,7 +97,7 @@ class CategoryTreeNode extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (MediaQuery.sizeOf(context).width - depth * 24 < 620)
+                if (screenWidth < 620)
                   PopupMenuButton<_CategoryAction>(
                     tooltip: 'Category actions',
                     enabled: enabled,
