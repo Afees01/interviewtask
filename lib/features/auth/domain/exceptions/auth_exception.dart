@@ -12,3 +12,10 @@ class UserNotFoundException extends AuthException {
   const UserNotFoundException()
       : super('No user was found for that ID. Please try another ID.');
 }
+
+class InvalidUserResponseException extends AuthException {
+  const InvalidUserResponseException()
+      : super(
+          'The user service returned an invalid response. Please try again later.',
+        );
+}

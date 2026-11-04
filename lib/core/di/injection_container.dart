@@ -45,6 +45,11 @@ Future<void> configureDependencies({String? databasePath}) async {
         baseUrl: 'https://jsonplaceholder.typicode.com',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
+        sendTimeout: const Duration(seconds: 10),
+        contentType: Headers.jsonContentType,
+        responseType: ResponseType.json,
+        validateStatus: (status) =>
+            status != null && status >= 200 && status < 300,
       ),
     ),
   );
